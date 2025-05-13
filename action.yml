@@ -1,0 +1,25 @@
+name: 'Git checkout'
+description: 'This action is used to checkout files from git and extract if necessary a working directory to the root folder.'
+author: Patryk Waluś <patryk.walus@vaimo.com>
+inputs:
+  working-directory:
+    description: 'Set working directory for your action'
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Git checkout
+      uses: actions/checkout@v4
+
+    - name: Move files from working-directory to the root folder
+      if: inputs.working-directory
+      shell: bash
+      run: |
+        if ! command -v rsync &> /dev/null; then
+          echo "rsync not found. Installing..."
+          apt-get update && apt-get install -y rsync
+        fi
+        
+        rsync -az ${{inputs.working-directory}}/ /tmp/${{inputs.working-directory}}
+        find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} \;
+        rsync -az /tmp/${{inputs.working-directory}}/ .
